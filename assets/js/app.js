@@ -1,52 +1,367 @@
 (() => {
-"use strict";
-const $=(s,r=document)=>r.querySelector(s), $$=(s,r=document)=>[...r.querySelectorAll(s)];
-const modal=$("#modal"), body=$("#modalBody"), title=$("#modalTitle"), toast=$("#toast");
-let timer, active="post", uploadedImage=null;
-$("#year").textContent=new Date().getFullYear();
-$("#mobileMenu").addEventListener("click",()=>$("#nav").classList.toggle("open"));
-$$('#nav a').forEach(a=>a.addEventListener("click",()=>$("#nav").classList.remove("open")));
-$("#closeModal").addEventListener("click",closeModal);
-modal.addEventListener("click",e=>{if(e.target===modal)closeModal()});
-document.addEventListener("keydown",e=>{if(e.key==="Escape")closeModal()});
-document.addEventListener("click",e=>{
- const btn=e.target.closest("[data-tool]"); if(btn){e.preventDefault();openTool(btn.dataset.tool)}
- const tpl=e.target.closest("[data-template]"); if(tpl){e.preventDefault();const t=tpl.dataset.template;openTool(t==="business"?"business":t==="creator"?"portfolio":"post");if(active==="post"){const p={festival:["উৎসবের শুভেচ্ছা","আপনার ও আপনার পরিবারের জন্য রইল আন্তরিক শুভকামনা।","#b09aff","#17152c","SHM CREATOR STUDIO"],education:["আজকের শেখা","প্রতিদিন একটু করে শিখুন, নিজের দক্ষতাকে এগিয়ে নিন।","#83c7ff","#102239","LEARN · CREATE · GROW"]}[t];if(p){$("#pTitle").value=p[0];$("#pSub").value=p[1];$("#pBg").value=p[2];$("#pFg").value=p[3];$("#pBrand").value=p[4];updatePoster()}}}
-});
-const categoryButtons=$$("#categoryTabs button");let category="all";
-categoryButtons.forEach(b=>b.addEventListener("click",()=>{category=b.dataset.category;categoryButtons.forEach(x=>x.classList.toggle("active",x===b));filterTools()}));
-$("#toolSearch").addEventListener("input",filterTools);
-function filterTools(){const q=$("#toolSearch").value.trim().toLowerCase();let count=0;$$(".tool-card").forEach(c=>{const okCat=category==="all"||c.dataset.category===category;const okQ=!q||(c.innerText+" "+c.dataset.keywords).toLowerCase().includes(q);c.hidden=!(okCat&&okQ);if(!c.hidden)count++});$("#noResults").hidden=count>0}
-function toastMsg(s){toast.textContent=s;toast.classList.add("show");clearTimeout(timer);timer=setTimeout(()=>toast.classList.remove("show"),2500)}
-function closeModal(){modal.classList.remove("open");modal.setAttribute("aria-hidden","true");document.body.style.overflow=""}
-function openTool(t){active=t;const map={post:["Social Post Maker",postTool],caption:["Bangla Caption Studio",captionTool],portfolio:["Portfolio Builder",portfolioTool],business:["Micro Business Kit",businessTool],product:["Digital Product Maker",productTool],counter:["Word & Character Counter",counterTool],formatter:["Text Formatter",formatterTool],colors:["Brand Color Lab",colorsTool],profit:["Price & Profit Calculator",profitTool],hashtags:["Hashtag Helper",hashtagsTool],script:["Short Video Script",scriptTool],ideas:["Content Idea Planner",ideasTool]};const item=map[t]||map.post;title.textContent=item[0];body.innerHTML="";item[1]();modal.classList.add("open");modal.setAttribute("aria-hidden","false");document.body.style.overflow="hidden"}
-function esc(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
-function field(label,id,value="",type="text",placeholder=""){return `<div class="field"><label for="${id}">${label}</label><input id="${id}" type="${type}" value="${esc(value)}" placeholder="${esc(placeholder)}"></div>`}
-function area(label,id,value="",placeholder=""){return `<div class="field"><label for="${id}">${label}</label><textarea id="${id}" placeholder="${esc(placeholder)}">${esc(value)}</textarea></div>`}
-function actions(items){return `<div class="actions">${items.map(x=>`<button class="action ${x.primary?"primary":""}" type="button" id="${x.id}">${x.label}</button>`).join("")}</div>`}
-function copy(s){const ta=document.createElement("textarea");ta.value=s;document.body.appendChild(ta);ta.select();try{document.execCommand("copy");toastMsg("কপি হয়েছে।")}catch{toastMsg("টেক্সট নির্বাচন করে কপি করুন।")}ta.remove()}
-function blobDownload(content,name,type="text/plain"){const u=URL.createObjectURL(new Blob([content],{type}));const a=document.createElement("a");a.href=u;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(u),1000)}
-function printHTML(titleText,content){const w=window.open("","_blank","width=900,height=700");if(!w){toastMsg("Print window খুলতে browser popup অনুমতি দিন।");return}w.document.write(`<!doctype html><html lang="bn"><head><meta charset="utf-8"><title>${esc(titleText)}</title><style>body{font-family:Arial,sans-serif;padding:28px;line-height:1.7;color:#182033}table{width:100%;border-collapse:collapse}td,th{border-bottom:1px solid #ddd;padding:8px;text-align:left}@page{margin:15mm}</style></head><body>${content}</body></html>`);w.document.close();setTimeout(()=>w.print(),300)}
-function postTool(){body.innerHTML=`<div class="workspace"><div class="form-stack">${field("পোস্টের শিরোনাম","pTitle","নিজের সৃষ্টিতে নতুন পরিচয়")}${area("ছোট বার্তা","pSub","আপনার ভাবনাকে ডিজিটাল সৃষ্টিতে রূপ দিন।")}${field("ব্র্যান্ডের নাম","pBrand","SHM CREATOR STUDIO")}<div class="field"><label>Background color</label><input id="pBg" type="color" value="#b09aff"></div><div class="field"><label>Text color</label><input id="pFg" type="color" value="#17152c"></div>${field("নিজের ছবি যোগ করুন (ঐচ্ছিক)","pImage","","file")}<span class="helper">PNG 1080×1080 হিসেবে ডাউনলোড হবে।</span>${actions([{id:"pDownload",label:"Download PNG",primary:true},{id:"pReset",label:"Reset"}])}</div><div class="preview-box"><div class="preview-label">LIVE PREVIEW</div><div id="poster" class="poster"><div class="poster-kicker">YOUR IDEA · YOUR BRAND</div><div><div id="pvTitle" class="poster-title"></div><div id="pvSub" class="poster-sub"></div></div><div id="pvBrand" class="poster-brand"></div></div></div></div>`;
-["pTitle","pSub","pBrand","pBg","pFg"].forEach(id=>$("#"+id).addEventListener("input",updatePoster));$("#pImage").addEventListener("change",e=>{const f=e.target.files[0];if(!f)return;if(!f.type.startsWith("image/"))return toastMsg("Image file নির্বাচন করুন।");const r=new FileReader();r.onload=()=>{uploadedImage=r.result;updatePoster()};r.readAsDataURL(f)});$("#pDownload").addEventListener("click",downloadPoster);$("#pReset").addEventListener("click",()=>{uploadedImage=null;$("#pTitle").value="নিজের সৃষ্টিতে নতুন পরিচয়";$("#pSub").value="আপনার ভাবনাকে ডিজিটাল সৃষ্টিতে রূপ দিন।";$("#pBrand").value="SHM CREATOR STUDIO";$("#pBg").value="#b09aff";$("#pFg").value="#17152c";$("#pImage").value="";updatePoster()});updatePoster()}
-function updatePoster(){const p=$("#poster");if(!p)return;p.style.backgroundColor=$("#pBg").value;p.style.backgroundImage=uploadedImage?`linear-gradient(#0002,#0002),url("${uploadedImage}")`:"none";p.style.backgroundSize="cover";p.style.backgroundPosition="center";p.style.color=$("#pFg").value;$("#pvTitle").textContent=$("#pTitle").value||"আপনার শিরোনাম";$("#pvSub").textContent=$("#pSub").value;$("#pvBrand").textContent=$("#pBrand").value}
-function downloadPoster(){const c=document.createElement("canvas");c.width=c.height=1080;const x=c.getContext("2d"),bg=$("#pBg").value,fg=$("#pFg").value;const finish=()=>{x.fillStyle=fg;x.textBaseline="top";x.font="800 25px sans-serif";x.fillText("YOUR IDEA · YOUR BRAND",80,80);let y=350;const lines=wrap($("#pTitle").value||"Your title",70,900);x.font="700 70px sans-serif";y-=lines.length*75/2;lines.forEach(l=>{x.fillText(l,80,y);y+=80});x.font="32px sans-serif";wrap($("#pSub").value,32,900).forEach(l=>{x.fillText(l,80,y+15);y+=43});x.font="700 23px sans-serif";x.fillText($("#pBrand").value.toUpperCase(),80,980);const a=document.createElement("a");a.download="shm-creator-post.png";a.href=c.toDataURL("image/png");a.click();toastMsg("PNG ডাউনলোড শুরু হয়েছে।")};x.fillStyle=bg;x.fillRect(0,0,1080,1080);if(uploadedImage){const im=new Image();im.onload=()=>{const s=Math.max(1080/im.width,1080/im.height),w=im.width*s,h=im.height*s;x.drawImage(im,(1080-w)/2,(1080-h)/2,w,h);x.fillStyle="#0003";x.fillRect(0,0,1080,1080);finish()};im.src=uploadedImage}else finish()}
-function wrap(text,size,max){const c=document.createElement("canvas").getContext("2d");c.font=`700 ${size}px sans-serif`;let lines=[],line="";String(text).split(/\s+/).forEach(w=>{let t=line?line+" "+w:w;if(c.measureText(t).width>max&&line){lines.push(line);line=w}else line=t});if(line)lines.push(line);return lines}
-function captionTool(){body.innerHTML=`<div class="workspace"><div class="form-stack"><div class="field"><label>Content type</label><select id="capType"><option value="business">ব্যবসার প্রচার</option><option value="festival">শুভেচ্ছা বার্তা</option><option value="education">শিক্ষামূলক পোস্ট</option><option value="creator">নিজের কাজের পরিচিতি</option></select></div><div class="field"><label>লেখার ভঙ্গি</label><select id="capTone"><option value="friendly">বন্ধুত্বপূর্ণ</option><option value="professional">পেশাদার</option><option value="emotional">আবেগপূর্ণ</option><option value="short">সংক্ষিপ্ত</option></select></div>${field("বিষয় / পণ্য","capSubject","","text","যেমন: ঘরে তৈরি কেক")}${area("মূল তথ্য","capDetails","","আপনার বিষয় সম্পর্কে কয়েকটি তথ্য লিখুন")}${actions([{id:"capGenerate",label:"Generate draft",primary:true},{id:"capCopy",label:"Copy"}])}<p class="note">এটি template-based tool, AI API নয়। পোস্ট করার আগে তথ্য যাচাই করুন।</p></div><div><div class="preview-label">YOUR DRAFT</div><div id="capOut" class="output">বিষয় লিখে Generate draft চাপুন।</div></div></div>`;
-$("#capGenerate").onclick=()=>{const s=$("#capSubject").value.trim(),d=$("#capDetails").value.trim(),type=$("#capType").value,tone=$("#capTone").value;if(!s)return toastMsg("বিষয় লিখুন।");const starts={business:`আপনার জন্য নিয়ে এসেছি ${s}।`,festival:`আনন্দ, ভালোবাসা ও নতুন আশায় ভরে উঠুক প্রতিটি মুহূর্ত।`,education:`আজকের শেখা: ${s}।`,creator:`আমি ${s} নিয়ে কাজ করছি এবং আমার সৃজনশীল ভাবনা তুলে ধরছি।`};const ends={friendly:"আপনার মতামত জানাতে ভুলবেন না!",professional:"আরও তথ্যের জন্য যোগাযোগ করুন।",emotional:"আপনাদের সমর্থনই এগিয়ে যাওয়ার অনুপ্রেরণা।",short:"বিস্তারিত জানতে যোগাযোগ করুন।"};$("#capOut").textContent=starts[type]+"\n\n"+(d||"আপনার প্রয়োজন অনুযায়ী বিস্তারিত জানুন।")+"\n\n"+ends[tone]};$("#capCopy").onclick=()=>copy($("#capOut").textContent)}
-function portfolioTool(){body.innerHTML=`<div class="workspace"><div class="form-stack">${field("আপনার নাম","pfName","আপনার নাম")}${field("পেশা / পরিচয়","pfRole","Digital Creator")}${area("সংক্ষিপ্ত পরিচিতি","pfBio","আমি সৃজনশীল ডিজিটাল কাজ তৈরি করতে ভালোবাসি।")}${field("দক্ষতা (কমা দিয়ে)","pfSkills","Design, Writing, Digital Tools")}${field("ইমেল (ঐচ্ছিক)","pfEmail","","email")}${field("ওয়েবসাইট / প্রোফাইল লিংক","pfLink","","url","https://")}${actions([{id:"pfDownload",label:"Download HTML",primary:true},{id:"pfPrint",label:"Save as PDF"}])}</div><div><div class="preview-label">PORTFOLIO PREVIEW</div><div id="pfPreview" class="portfolio"></div></div></div>`;
-["pfName","pfRole","pfBio","pfSkills","pfEmail","pfLink"].forEach(id=>$("#"+id).addEventListener("input",updatePf));$("#pfDownload").onclick=()=>{updatePf();blobDownload(makePfHTML(),"my-creator-portfolio.html","text/html;charset=utf-8");toastMsg("Portfolio HTML ডাউনলোড হয়েছে।")};$("#pfPrint").onclick=()=>{updatePf();printHTML("Creator Portfolio",$("#pfPreview").outerHTML)};updatePf()}
-function updatePf(){const p=$("#pfPreview");if(!p)return;p.innerHTML=`<div class="preview-label">CREATOR PORTFOLIO</div><h3>${esc($("#pfName").value||"আপনার নাম")}</h3><div class="role">${esc($("#pfRole").value)}</div><p>${esc($("#pfBio").value)}</p><div class="chips">${$("#pfSkills").value.split(",").map(s=>s.trim()).filter(Boolean).map(s=>`<span>${esc(s)}</span>`).join("")}</div><p>${esc($("#pfEmail").value)}<br>${esc($("#pfLink").value)}</p>`}
-function makePfHTML(){return `<!doctype html><html lang="bn"><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>${esc($("#pfName").value)} Portfolio</title><style>body{font:16px Arial,sans-serif;background:#10182b;color:white;padding:8vw;line-height:1.8}main{max-width:760px;margin:auto;padding:35px;border:1px solid #39415a;border-radius:20px;background:#19233b}h1{font-size:40px}.role{color:#75e7c4}.chips span{display:inline-block;border:1px solid #46516c;border-radius:30px;padding:4px 12px;margin:4px;font-size:12px}</style><main><small>CREATOR PORTFOLIO</small><h1>${esc($("#pfName").value)}</h1><div class="role">${esc($("#pfRole").value)}</div><p>${esc($("#pfBio").value)}</p><div class="chips">${$("#pfSkills").value.split(",").map(s=>s.trim()).filter(Boolean).map(s=>`<span>${esc(s)}</span>`).join("")}</div><p>${esc($("#pfEmail").value)}<br>${esc($("#pfLink").value)}</p></main></html>`}
-function businessTool(){body.innerHTML=`<div class="workspace"><div class="form-stack"><div class="field"><label>Document type</label><select id="bizType"><option>Quotation / কোটেশন</option><option>Service Price List / মূল্যতালিকা</option><option>Invoice / বিল</option></select></div>${field("ব্যবসা / পরিষেবার নাম","bizName","আপনার ব্যবসা")}${field("গ্রাহকের নাম","bizCustomer","","text","ঐচ্ছিক")}${area("পরিষেবা — মূল্য (প্রতি লাইনে)","bizItems","Poster Design — ₹299\\nSocial Media Pack — ₹499\\nBasic Website — ₹1999")}${area("শর্ত / নোট","bizTerms","মূল্য ও সময়সীমা নিশ্চিত করে নিন।")}${actions([{id:"bizPrint",label:"Print / Save PDF",primary:true}])}<p class="note">এটি সাধারণ টেমপ্লেট, tax-compliant invoicing software নয়।</p></div><div><div class="preview-label">DOCUMENT PREVIEW</div><div id="bizPaper" class="paper"></div></div></div>`;["bizType","bizName","bizCustomer","bizItems","bizTerms"].forEach(id=>$("#"+id).addEventListener("input",updateBiz));$("#bizPrint").onclick=()=>{updateBiz();printHTML("Business document",$("#bizPaper").outerHTML)};updateBiz()}
-function updateBiz(){const p=$("#bizPaper");if(!p)return;const rows=$("#bizItems").value.split("\n").filter(Boolean).map((s,i)=>{const a=s.split("—");return `<tr><td>${i+1}</td><td>${esc(a[0])}</td><td>${esc(a[1]||"—")}</td></tr>`}).join("");p.innerHTML=`<small>SHM CREATOR STUDIO</small><h3>${esc($("#bizType").value)}</h3><h4>${esc($("#bizName").value)}</h4><p>${$("#bizCustomer").value?"গ্রাহক: "+esc($("#bizCustomer").value):""}</p><table><thead><tr><th>#</th><th>পরিষেবা</th><th>মূল্য</th></tr></thead><tbody>${rows}</tbody></table><p>${esc($("#bizTerms").value)}</p>`}
-function productTool(){body.innerHTML=`<div class="workspace"><div class="form-stack">${field("পণ্যের শিরোনাম","prTitle","আমার ডিজিটাল গাইড")}${field("লেখক","prAuthor","আপনার নাম")}${area("ভূমিকা","prIntro","এই গাইডে আপনি শিখবেন...")}${area("মূল বিষয়বস্তু","prBody","প্রথম অধ্যায়\\nআপনার বিষয় এখানে লিখুন।\\n\\nদ্বিতীয় অধ্যায়\\nআরও তথ্য যোগ করুন।")}${actions([{id:"prPrint",label:"Print / Save PDF",primary:true}])}</div><div><div class="preview-label">DOCUMENT PREVIEW</div><div id="prPaper" class="paper"></div></div></div>`;["prTitle","prAuthor","prIntro","prBody"].forEach(id=>$("#"+id).addEventListener("input",updatePr));$("#prPrint").onclick=()=>{updatePr();printHTML("Digital Product",$("#prPaper").outerHTML)};updatePr()}
-function updatePr(){const p=$("#prPaper");if(!p)return;p.innerHTML=`<small>SHM CREATOR STUDIO</small><h3>${esc($("#prTitle").value)}</h3><p>লেখক: ${esc($("#prAuthor").value)}</p><hr><p>${esc($("#prIntro").value).replace(/\n/g,"<br>")}</p><div style="white-space:pre-wrap">${esc($("#prBody").value)}</div>`}
-function counterTool(){body.innerHTML=`${area("আপনার টেক্সট লিখুন","countText","","এখানে লিখুন বা পেস্ট করুন...")}<div class="metric-grid"><div class="metric"><b id="words">0</b><span>Words</span></div><div class="metric"><b id="chars">0</b><span>Characters</span></div><div class="metric"><b id="charsNo">0</b><span>Without spaces</span></div><div class="metric"><b id="sentences">0</b><span>Sentences (approx.)</span></div></div><div class="metric"><b id="readTime">0 min</b><span>Estimated reading time</span></div>`;$("#countText").addEventListener("input",()=>{const s=$("#countText").value.trim(),words=s?s.split(/\s+/).length:0;$("#words").textContent=words;$("#chars").textContent=$("#countText").value.length;$("#charsNo").textContent=$("#countText").value.replace(/\s/g,"").length;$("#sentences").textContent=s?(s.match(/[.!?।]+/g)||[]).length:0;$("#readTime").textContent=Math.max(1,Math.ceil(words/200))+" min"})}
-function formatterTool(){body.innerHTML=`${area("টেক্সট","fmtInput","","এখানে টেক্সট লিখুন...")}<div class="actions"><button class="action" id="upper">UPPERCASE</button><button class="action" id="lower">lowercase</button><button class="action" id="titleCase">Title Case</button><button class="action" id="clean">Clean spaces</button><button class="action primary" id="fmtCopy">Copy output</button></div>${area("ফলাফল","fmtOutput","")}`;$("#upper").onclick=()=>$("#fmtOutput").value=$("#fmtInput").value.toUpperCase();$("#lower").onclick=()=>$("#fmtOutput").value=$("#fmtInput").value.toLowerCase();$("#titleCase").onclick=()=>$("#fmtOutput").value=$("#fmtInput").value.toLowerCase().replace(/\b\w/g,c=>c.toUpperCase());$("#clean").onclick=()=>$("#fmtOutput").value=$("#fmtInput").value.split("\n").map(s=>s.replace(/\s+/g," ").trim()).join("\n").trim();$("#fmtCopy").onclick=()=>copy($("#fmtOutput").value)}
-function colorsTool(){const colors=["#8067F8","#B09AFF","#75E7C4","#83C7FF","#FFB27E","#FF8FBD","#FFD56D","#18233A","#F5F7FF"];body.innerHTML=`<p class="note">রং বেছে HEX কোড কপি করুন। নিচের প্যালেটটি একটি starter palette; আপনার ব্র্যান্ড অনুযায়ী পরিবর্তন করুন।</p><div class="color-swatches">${colors.map((c,i)=>`<button class="swatch" data-color="${c}"><div class="swatch-color" style="background:${c}"></div><b>${c}</b><small>Click to copy</small></button>`).join("")}</div><div class="field" style="margin-top:18px"><label>Custom color</label><input type="color" id="customColor" value="#8067f8"></div><div class="output" id="colorCode">#8067F8</div>${actions([{id:"copyColor",label:"Copy HEX",primary:true}])}`;$$("[data-color]").forEach(b=>b.onclick=()=>{ $("#colorCode").textContent=b.dataset.color;copy(b.dataset.color)});$("#customColor").oninput=()=>$("#colorCode").textContent=$("#customColor").value.toUpperCase();$("#copyColor").onclick=()=>copy($("#colorCode").textContent)}
-function profitTool(){body.innerHTML=`<div class="workspace"><div class="form-stack">${field("প্রতি পণ্যের খরচ (₹)","cost","100","number")}${field("প্রতি পণ্যের বিক্রয়মূল্য (₹)","sale","150","number")}${field("পরিমাণ / ইউনিট","qty","1","number")}${field("অতিরিক্ত খরচ (₹)","extra","0","number")}${actions([{id:"calcProfit",label:"Calculate",primary:true}])}</div><div><div class="preview-label">ESTIMATED RESULT</div><div class="metric-grid"><div class="metric"><b id="revenue">₹0</b><span>Total revenue</span></div><div class="metric"><b id="totalCost">₹0</b><span>Total cost</span></div><div class="metric"><b id="profit">₹0</b><span>Estimated profit</span></div><div class="metric"><b id="margin">0%</b><span>Profit margin</span></div></div><p class="note">এটি সরল অনুমান; কর, প্ল্যাটফর্ম ফি, ফেরত ও অন্যান্য খরচ আলাদা করে ধরুন।</p></div></div>`;$("#calcProfit").onclick=()=>{const c=+$("#cost").value||0,s=+$("#sale").value||0,q=Math.max(0,+$("#qty").value||0),e=+$("#extra").value||0,rev=s*q,cost=c*q+e,p=rev-cost;$("#revenue").textContent="₹"+rev.toFixed(2);$("#totalCost").textContent="₹"+cost.toFixed(2);$("#profit").textContent="₹"+p.toFixed(2);$("#margin").textContent=(rev?p/rev*100:0).toFixed(1)+"%"};$("#calcProfit").click()}
-function hashtagsTool(){body.innerHTML=`${field("বিষয় / নিশ","hashTopic","","text","যেমন: Bengali books, handmade crafts")}${field("ব্র্যান্ড নাম (ঐচ্ছিক)","hashBrand","","text","আপনার পেজের নাম")}${actions([{id:"makeHash",label:"Generate hashtags",primary:true},{id:"copyHash",label:"Copy"}])}<div id="hashOut" class="output">আপনার বিষয় লিখুন।</div><p class="note">হ্যাশট্যাগগুলি বিষয় থেকে তৈরি সাধারণ সাজেশন; ট্রেন্ডিং বা জনপ্রিয়তার নিশ্চয়তা নয়।</p>`;$("#makeHash").onclick=()=>{const topic=$("#hashTopic").value.trim(),brand=$("#hashBrand").value.trim();if(!topic)return toastMsg("বিষয় লিখুন।");const clean=s=>s.toLowerCase().replace(/[^\p{L}\p{N} ]/gu,"").trim().split(/\s+/).filter(Boolean).join("");const words=topic.toLowerCase().split(/[,\s]+/).map(clean).filter(Boolean);const tags=[...new Set([...words.map(w=>"#"+w),"#IndiaCreators","#DigitalCreator","#MadeInIndia",...(brand?["#"+clean(brand)]:[])])];$("#hashOut").textContent=tags.join(" ");};$("#copyHash").onclick=()=>copy($("#hashOut").textContent)}
-function scriptTool(){body.innerHTML=`${field("ভিডিওর বিষয়","scTopic","","text","যেমন: ৩টি দরকারি ডিজিটাল টুল")}${field("দর্শক","scAudience","সাধারণ দর্শক")}${field("সময়","scDuration","30 সেকেন্ড")}${actions([{id:"makeScript",label:"Create script outline",primary:true},{id:"copyScript",label:"Copy"}])}<div id="scriptOut" class="output">বিষয় লিখে স্ক্রিপ্ট তৈরি করুন।</div><p class="note">এটি একটি কাঠামো; নিজের অভিজ্ঞতা ও যাচাইকৃত তথ্য দিয়ে সম্পাদনা করুন।</p>`;$("#makeScript").onclick=()=>{const t=$("#scTopic").value.trim();if(!t)return toastMsg("ভিডিওর বিষয় লিখুন।");$("#scriptOut").textContent=`HOOK (প্রথম 3–5 সেকেন্ড)\\n“আপনি কি জানেন ${t} আপনার কাজে কীভাবে সাহায্য করতে পারে?”\\n\\nMAIN POINTS\\n1. বিষয়টি কেন গুরুত্বপূর্ণ?\\n2. ${$("#scAudience").value||"দর্শক"}-এর জন্য একটি ব্যবহারিক পরামর্শ দিন।\\n3. ছোট একটি উদাহরণ দেখান।\\n\\nCALL TO ACTION\\n“এমন আরও ব্যবহারিক টিপস পেতে পেজটি অনুসরণ করুন।”\\n\\nSuggested duration: ${$("#scDuration").value}`};$("#copyScript").onclick=()=>copy($("#scriptOut").textContent)}
-function ideasTool(){body.innerHTML=`<div class="workspace"><div class="form-stack"><div class="field"><label>আপনার বিষয় / নিশ</label><select id="ideaNiche"><option>শিক্ষা</option><option>ক্ষুদ্র ব্যবসা</option><option>ডিজিটাল দক্ষতা</option><option>বই ও সাহিত্য</option><option>হস্তশিল্প</option><option>খাদ্য</option><option>ভ্রমণ ও স্থানীয় সংস্কৃতি</option></select></div><div class="field"><label>প্ল্যাটফর্ম</label><select id="ideaPlatform"><option>Facebook</option><option>Instagram</option><option>YouTube Shorts</option><option>Blog / Website</option></select></div>${actions([{id:"makeIdeas",label:"Generate ideas",primary:true},{id:"copyIdeas",label:"Copy ideas"}])}</div><div><div class="preview-label">CONTENT STARTERS</div><div class="output" id="ideasOut">আপনার বিষয় বেছে নিন।</div></div></div>`;$("#makeIdeas").onclick=()=>{const n=$("#ideaNiche").value,p=$("#ideaPlatform").value;$("#ideasOut").textContent=`${n} — ${p} কনটেন্ট আইডিয়া\\n\\n1. Beginner's guide: ${n} শুরু করার ৫টি ধাপ\\n2. Common mistakes: নতুনরা যে ৩টি ভুল করেন\\n3. Quick tips: ৩০ সেকেন্ডে একটি ব্যবহারিক টিপস\\n4. Behind the scenes: আপনার কাজ তৈরির প্রক্রিয়া\\n5. Myth vs fact: ${n} নিয়ে প্রচলিত ধারণা যাচাই\\n6. Checklist: কাজ শুরু করার আগে কী কী লাগবে\\n7. Personal story: আপনি কীভাবে শিখলেন\\n8. FAQ: দর্শকের ৫টি সাধারণ প্রশ্ন\\n9. Local angle: আপনার এলাকার অভিজ্ঞতা বা গল্প\\n10. Resource list: নতুনদের জন্য দরকারি রিসোর্স\\n\\nনিজের অভিজ্ঞতা, উদাহরণ ও যাচাইকৃত তথ্য যোগ করুন।`};$("#copyIdeas").onclick=()=>copy($("#ideasOut").textContent)}
+  "use strict";
+  const $ = (selector, root = document) => root.querySelector(selector);   const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
+  const modal = $("#toolModal"), modalTitle = $("#modalTitle"), modalContent = $("#modalContent"), toast = $("#toast");
+  let activeTool = "post", toastTimer;
+
+  $("#year").textContent = new Date().getFullYear();
+  $("#menuToggle").addEventListener("click", () => $("#mainNav").classList.toggle("open"));   $$("#mainNav a").forEach(a => a.addEventListener("click", () => $("#mainNav").classList.remove("open")));
+  $("#closeModal").addEventListener("click", closeModal);
+  modal.addEventListener("click", e => { if (e.target === modal) closeModal(); });
+  document.addEventListener("keydown", e => { if (e.key === "Escape") closeModal(); });
+  $$("[data-open-tool]").forEach(btn => btn.addEventListener("click", () => openTool(btn.dataset.openTool)));      $$
+(".template-tile").forEach(btn => btn.addEventListener("click", () => {
+    const t = btn.dataset.template;
+    openTool(t === "business" ? "business" : t === "creator" ? "portfolio" : "post");
+    if (activeTool === "post") {
+      const presets = {
+        festival: ["উৎসবের শুভেচ্ছা", "আপনার ও আপনার পরিবারের জন্য রইল আন্তরিক শুভকামনা ও ভালোবাসা।", "#8b5cf6", "#ffffff", "SHM CREATOR STUDIO"],
+        education: ["আজকের স্মার্ট টিপস", "প্রতিদিন নতুন প্রযুক্তি ও ক্রিয়েটিভ দক্ষতা শিখে নিজেকে এগিয়ে রাখুন।", "#2563eb", "#ffffff", "LEARN & GROW"]
+      };
+      const p = presets[t];
+      if (p) { 
+        $("#postTitle").value = p[0]; 
+        $("#postSubtitle").value = p[1]; 
+        $("#postBg").value = p[2]; 
+        $("#postColor").value = p[3]; 
+        $("#postBrand").value = p[4]; 
+        updatePoster(); 
+      }
+    }
+  }));
+
+  function showToast(message) {
+    toast.textContent = message; 
+    toast.classList.add("show");
+    clearTimeout(toastTimer); 
+    toastTimer = setTimeout(() => toast.classList.remove("show"), 2800);
+  }
+
+  function closeModal() { 
+    modal.classList.remove("open"); 
+    modal.setAttribute("aria-hidden", "true"); 
+    document.body.style.overflow = ""; 
+  }
+
+  function openTool(tool) {
+    activeTool = tool;
+    modal.classList.add("open"); 
+    modal.setAttribute("aria-hidden", "false"); 
+    document.body.style.overflow = "hidden";
+    
+    const config = {
+      post: ["AI Social Media Post Maker", renderPost],
+      caption: ["Smart Bangla Caption Studio", renderCaption],
+      product: ["Digital E-Book & PDF Maker", renderProduct],
+      portfolio: ["Interactive Portfolio Builder", renderPortfolio],
+      business: ["Business Quotation Kit", renderBusiness],
+      seo: ["Creator SEO & Meta Inspector", renderSEO]
+    };
+    const selected = config[tool] || config.post;
+    modalTitle.textContent = selected[0]; 
+    modalContent.innerHTML = ""; 
+    selected[1]();
+  }
+
+  function safeText(v) { return String(v ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+  
+  function field(label, id, value="", type="text", placeholder="") {
+    return `<div class="field"><label for="${id}">${label}</label><input id="${id}" type="${type}" value="${safeText(value)}" placeholder="${safeText(placeholder)}"></div>`;
+  }
+  
+  function area(label, id, value="", placeholder="") {
+    return `<div class="field"><label for="${id}">${label}</label><textarea id="${id}" placeholder="${safeText(placeholder)}">${safeText(value)}</textarea></div>`;
+  }
+  
+  function buttons(items) { 
+    return `<div class="form-actions">${items.map(i => `<button type="button" class="action-btn ${i.primary ? "primary" : ""}" id="${i.id}">${i.label}</button>`).join("")}</div>`; 
+  }
+
+  // 1. Post Maker
+  function renderPost() {
+    modalContent.innerHTML = `<div class="workspace-grid"><div class="form-stack">
+      ${field("পোস্টের শিরোনাম", "postTitle", "স্মার্ট ডিজাইন ভবিষ্যতের")}
+      ${area("ছোট বিবরণ / সাবটাইটেল", "postSubtitle", "আধুনিক প্রযুক্তির ছোঁয়ায় আপনার ক্রিয়েটিভ কাজ প্রকাশ করুন।")}
+      ${field("ব্র্যান্ড বা পেজের নাম", "postBrand", "SHM DIGITAL HUB")}
+      <div class="field"><label for="postBg">ব্যাকগ্রাউন্ড গ্রেডিয়েন্ট / রং</label><input id="postBg" type="color" value="#8b5cf6"></div>
+      <div class="field"><label for="postColor">লেখার রং</label><input id="postColor" type="color" value="#ffffff"></div>
+      ${field("ছবি আপলোড (ঐচ্ছিক)", "postImage", "", "file")}
+      <span class="helper">সোশ্যাল মিডিয়া ফিডের জন্য অপ্টিমাইজড 1:1 রেশিও প্রিভিউ।</span>
+      ${buttons([{id:"downloadPost", label:"PNG ডাউনলোড", primary:true}, {id:"resetPost", label:"রিসেট"}])}
+    </div><div class="preview-panel"><div class="preview-title">LIVE PREVIEW</div><div id="posterCanvas" class="poster-canvas"><div class="poster-kicker">ORANGE ECONOMY 2026</div><div><div id="posterTitle" class="poster-title">স্মার্ট ডিজাইন ভবিষ্যতের</div><div id="posterSubtitle" class="poster-subtitle">আধুনিক প্রযুক্তির ছোঁয়ায় আপনার ক্রিয়েটিভ কাজ প্রকাশ করুন।</div></div><div id="posterBrand" class="poster-brand">SHM DIGITAL HUB</div></div><div class="preview-caption">হাই-রেজোলিউশন PNG হিসেবে ডাউনলোড করা যাবে।</div></div></div>`;
+    
+    ["postTitle", "postSubtitle", "postBrand", "postBg", "postColor"].forEach(id => $("#" + id).addEventListener("input", updatePoster));
+    $("#postImage").addEventListener("change", previewImage);
+    $("#downloadPost").addEventListener("click", downloadPoster);
+    $("#resetPost").addEventListener("click", () => { 
+      $("#postTitle").value = "স্মার্ট ডিজাইন ভবিষ্যতের"; 
+      $("#postSubtitle").value = "আধুনিক প্রযুক্তির ছোঁয়ায় আপনার ক্রিয়েটিভ কাজ প্রকাশ করুন।"; 
+      $("#postBrand").value = "SHM DIGITAL HUB"; 
+      $("#postBg").value = "#8b5cf6"; 
+      $("#postColor").value = "#ffffff"; 
+      $("#postImage").value = ""; 
+      uploadedImage = null; 
+      updatePoster(); 
+    });
+    updatePoster();
+  }
+
+  let uploadedImage = null;
+  function previewImage(e) {
+    const file = e.target.files && e.target.files[0];
+    if (!file) { uploadedImage = null; updatePoster(); return; }
+    if (!file.type.startsWith("image/")) { showToast("অনুগ্রহ করে একটি সঠিক ছবি নির্বাচন করুন।"); return; }
+    const reader = new FileReader();
+    reader.onload = () => { uploadedImage = reader.result; updatePoster(); };
+    reader.readAsDataURL(file);
+  }
+
+  function updatePoster() {
+    const canvas = $("#posterCanvas"); if (!canvas) return;
+    canvas.style.background = $("#postBg").value;
+    canvas.style.color = $("#postColor").value;
+    $("#posterTitle").textContent = $("#postTitle").value || "শিরোনাম";
+    $("#posterSubtitle").textContent = $("#postSubtitle").value || "";
+    $("#posterBrand").textContent = $("#postBrand").value || "SHM STUDIO";
+    canvas.style.backgroundImage = uploadedImage ? `linear-gradient(rgba(0,0,0,0.3),rgba(0,0,0,0.3)),url("${uploadedImage}")` : "none";
+    canvas.style.backgroundSize = "cover"; 
+    canvas.style.backgroundPosition = "center";
+  }
+
+  function downloadPoster() {
+    const title = $("#postTitle").value || "Poster";
+    const subtitle = $("#postSubtitle").value || "";
+    const brand = $("#postBrand").value || "";
+    const bg = $("#postBg").value, fg = $("#postColor").value;
+    const img = uploadedImage;
+    const canvas = document.createElement("canvas"); canvas.width = 1080; canvas.height = 1080;
+    const ctx = canvas.getContext("2d");
+    
+    const paint = () => {
+      ctx.fillStyle = bg; ctx.fillRect(0, 0, 1080, 1080);
+      if (img) {
+        const image = new Image();
+        image.onload = () => {
+          const scale = Math.max(1080/image.width, 1080/image.height), w = image.width*scale, h = image.height*scale;
+          ctx.drawImage(image, (1080-w)/2, (1080-h)/2, w, h);
+          ctx.fillStyle = "rgba(0,0,0,0.35)"; ctx.fillRect(0, 0, 1080, 1080); 
+          drawText();
+        };
+        image.onerror = drawText; 
+        image.src = img;
+      } else {
+        drawText();
+      }
+
+      function drawText() {
+        ctx.fillStyle = fg; 
+        ctx.textBaseline = "top"; 
+        ctx.font = "800 28px sans-serif"; 
+        ctx.fillText("SHM CREATOR STUDIO", 90, 90);
+        
+        ctx.font = "800 68px sans-serif"; 
+        let y = 340;
+        ctx.fillText(title, 90, y, 900);
+        
+        ctx.font = "400 34px sans-serif"; 
+        ctx.fillStyle = fg;
+        ctx.fillText(subtitle, 90, 520, 900);
+        
+        ctx.font = "800 26px sans-serif"; 
+        ctx.fillText(brand.toUpperCase(), 90, 960);
+        
+        const link = document.createElement("a"); 
+        link.download = "shm-creator-poster.png"; 
+        link.href = canvas.toDataURL("image/png"); 
+        link.click(); 
+        showToast("হাই-রেজোলিউশন পোস্টার সফলভাবে ডাউনলোড হয়েছে।");
+      }
+    };
+    paint();
+  }
+
+  // 2. Caption Studio
+  function renderCaption() {
+    modalContent.innerHTML = `<div class="workspace-grid"><div class="form-stack">
+      <div class="field"><label for="captionType">কনটেন্টের ধরন</label><select id="captionType"><option value="business">ব্যবসার প্রচার ও অফার</option><option value="festival">উৎসব ও শুভেচ্ছা</option><option value="education">শিক্ষামূলক টিপস</option><option value="creator">ক্রিয়েটর পোর্টফোলিও</option><option value="video">রিলস / ভিডিও স্ক্রিপ্ট</option></select></div>
+      <div class="field"><label for="captionTone">লেখার ভঙ্গি (Tone)</label><select id="captionTone"><option value="friendly">বন্ধুত্বপূর্ণ ও আকর্ষক</option><option value="professional">প্রফেশনাল ও কর্পোরেট</option><option value="emotional">আবেগপূর্ণ ও প্রেরণাদায়ী</option><option value="short">সংক্ষিপ্ত ও পয়েন্ট টু পয়েন্ট</option></select></div>
+      ${field("বিষয় / পণ্য / পরিষেবার নাম", "captionSubject", "", "text", "যেমন: অনলাইন ক্রিয়েটিভ কোর্স")}
+      ${area("মূল তথ্য বা বিশেষ অফার", "captionDetails", "", "মূল বৈশিষ্ট্য বা অফার সম্পর্কে লিখুন")}
+      ${buttons([{id:"generateCaption", label:"স্মার্ট খসড়া তৈরি করুন", primary:true}, {id:"copyCaption", label:"কপি করুন"}])}
+      <p class="small-note">স্মার্ট টেমপ্লেট জেনারেটর; আপনার প্রয়োজন অনুযায়ী তাৎক্ষণিকভাবে খসড়া তৈরি করে।</p>
+    </div><div><div class="preview-title">GENERATED CAPTION</div><div class="output-area" id="captionOutput">তথ্য পূরণ করে “স্মার্ট খসড়া তৈরি করুন” বাটনে ক্লিক করুন।</div></div></div>`;
+    
+    $("#generateCaption").addEventListener("click", generateCaption);
+    $("#copyCaption").addEventListener("click", () => copyText($("#captionOutput").textContent));
+  }
+
+  function generateCaption() {
+    const type = $("#captionType").value, tone = $("#captionTone").value, subject = $("#captionSubject").value.trim(), details = $("#captionDetails").value.trim();
+    if (!subject) { showToast("প্রথমে বিষয় বা পণ্যের নাম লিখুন।"); return; }
+    
+    const openers = {
+      business: `🌟 বিশেষ ঘোষণা! নিয়ে এলাম আপনাদের পছন্দের ${subject}।`,
+      festival: `✨ উৎসবের এই আনন্দে আপনার ও আপনার পরিবারের জন্য রইল বিশেষ নিবেদন: ${subject}।`,
+      education: `💡 আজকের শেখার বিষয়: ${subject}। জেনে নিন সহজ কিছু কৌশল।`,
+      creator: `🚀 আমার নতুন ক্রিয়েটিভ প্রজেক্ট ${subject} নিয়ে কাজ শুরু করেছি। আপনাদের মতামত অত্যন্ত মূল্যবান!`,
+      video: `🎬 [রিলস স্ক্রিপ্ট]\nআজ কথা বলব ${subject} নিয়ে। ভিডিওটি শেষ পর্যন্ত দেখুন!`
+    };
+    const endings = {
+      friendly: "আজই যোগাযোগ করুন এবং আপনার মতামত জানান! 👇",
+      professional: "বিস্তারিত জানতে এবং বুকিং করতে ইনবক্স করুন।",
+      emotional: "আপনাদের ভালোবাসা ও সমর্থনই আমাদের এগিয়ে চলার মূল শক্তি। ❤️",
+      short: "বিস্তারিত জানতে যোগাযোগ করুন।"
+    };
+    
+    let out = openers[type] + "\n\n" + (details || "আপনার চাহিদা অনুযায়ী সেরা মানের সেবা ও অভিজ্ঞতা নিশ্চিত করতে আমরা প্রতিজ্ঞাবদ্ধ।") + "\n\n#SHMDigitalHub #CreatorStudio #WestBengal #DigitalIndia\n\n" + endings[tone];
+    $("#captionOutput").textContent = out;
+  }
+
+  // 3. Product Maker
+  function renderProduct() {
+    modalContent.innerHTML = `<div class="workspace-grid"><div class="form-stack">
+      ${field("ই-বুক / ডকুমেন্টের শিরোনাম", "productTitle", "ডিজিটাল ক্রিয়েটর গাইড ২০২৬")}
+      ${field("লেখক / প্রকাশকের নাম", "productAuthor", "SHM Digital Hub")}
+      ${area("ভূমিকা", "productIntro", "এই গাইডে আপনি আধুনিক ডিজিটাল টুলস ও ক্রিয়েটর ইকোনমির মূল বিষয়গুলো জানতে পারবেন।")}
+      ${area("মূল বিষয়বস্তু ও অধ্যায়", "productBody", "অধ্যায় ১: ডিজিটাল টুলসের পরিচিতি\\nসঠিক প্ল্যাটফর্ম ও সফটওয়্যার নির্বাচন।\\n\\nঅধ্যায় ২: কন্টেন্ট ক্রিয়েশন\\nসোশ্যাল মিডিয়ায় নিজের উপস্থিতি তৈরি করা।")}
+      ${buttons([{id:"previewProduct", label:"প্রিভিউ আপডেট", primary:true}, {id:"printProduct", label:"PDF হিসেবে সংরক্ষণ"}])}
+      <p class="small-note">প্রিন্ট ডায়ালগ থেকে Destination এ “Save as PDF” সিলেক্ট করুন।</p>
+    </div><div><div class="preview-title">DOCUMENT PREVIEW</div><article id="productPaper" class="business-paper printable"></article></div></div>`;
+    
+    ["productTitle", "productAuthor", "productIntro", "productBody"].forEach(id => $("#" + id).addEventListener("input", updateProduct));
+    $("#previewProduct").addEventListener("click", updateProduct);
+    $("#printProduct").addEventListener("click", () => { updateProduct(); printElement($("#productPaper"), "Digital E-Book"); });
+    updateProduct();
+  }
+
+  function updateProduct() {
+    const paper = $("#productPaper"); if (!paper) return;
+    paper.innerHTML = `<div style="font-size:10px;letter-spacing:2px;color:#8b5cf6;font-weight:800">SHM DIGITAL HUB PUBLICATION</div><h3>${safeText($("#productTitle").value)}</h3><p>লেখক / প্রকাশক: ${safeText($("#productAuthor").value)}</p><hr style="border:0;border-top:1px solid #e2e8f0;margin:16px 0"><p style="font-weight:600">${safeText($("#productIntro").value).replace(/\n/g,"<br>")}</p><div style="white-space:pre-wrap;font-size:13px;line-height:1.8;margin-top:16px">${safeText($("#productBody").value)}</div><p style="font-size:9.5px;color:#94a3b8;margin-top:30px">Published via SHM Creator Studio · All rights reserved.</p>`;
+  }
+
+  // 4. Portfolio Builder
+  function renderPortfolio() {
+    modalContent.innerHTML = `<div class="workspace-grid"><div class="form-stack">
+      ${field("আপনার নাম", "portName", "সাদিকুল হক মোল্যা")}
+      ${field("পেশা / পদবী", "portRole", "Data Entry Operator & Content Creator")}
+      ${area("সংক্ষিপ্ত বায়ো", "portBio", "বাংলা কন্টেন্ট রাইটিং, ওয়েব ইউটিলিটি ডিজাইন এবং ডিজিটাল পাবলিশিং নিয়ে কাজ করি।")}
+      ${field("দক্ষতা (কমা দিয়ে লিখুন)", "portSkills", "Bengali Typography, Web Design, Google Apps Script, Content Editing")}
+      ${field("ইমেল অ্যাড্রেস", "portEmail", "", "email", "you@shmsolutions.online")}
+      ${field("ওয়েবসাইট / পোর্টফোলিও লিংক", "portLink", "", "url", "https://shmwb.in")}
+      ${buttons([{id:"updatePortfolio", label:"প্রিভিউ আপডেট", primary:true}, {id:"downloadPortfolio", label:"HTML ডাউনলোড"}, {id:"printPortfolio", label:"PDF / Print"}])}
+      <p class="small-note">ডাউনলোড করা HTML ফাইলটি আপনার কম্পিউটারে বা হোস্টিংয়ে রান করতে পারবেন।</p>
+    </div><div><div class="preview-title">PORTFOLIO PREVIEW</div><div id="portfolioPreview" class="portfolio-preview"></div></div></div>`;
+    
+    ["portName", "portRole", "portBio", "portSkills", "portEmail", "portLink"].forEach(id => $("#" + id).addEventListener("input", updatePortfolio));
+    $("#updatePortfolio").addEventListener("click", updatePortfolio);
+    $("#downloadPortfolio").addEventListener("click", downloadPortfolio);
+    $("#printPortfolio").addEventListener("click", () => printElement($("#portfolioPreview"), "Creator Portfolio"));
+    updatePortfolio();
+  }
+
+  function updatePortfolio() {
+    const p = $("#portfolioPreview"); if (!p) return;
+    const name = $("#portName").value \vert{}\vert{} "আপনার নাম", role = $("#portRole").value || "Digital Creator", bio = $("#portBio").value \vert{}\vert{} "", skills = $("#portSkills").value.split(",").map(s => s.trim()).filter(Boolean);
+    const email = $("#portEmail").value.trim(), link = $("#portLink").value.trim();
+    
+    p.innerHTML = `<div style="font:800 10px Manrope;letter-spacing:2px;color:#c4b5fd">SHM CREATOR PROFILE</div><h3>${safeText(name)}</h3><div class="role">${safeText(role)}</div><p>${safeText(bio)}</p><div class="skill-chips">${skills.map(s => `<span>${safeText(s)}</span>`).join("")}</div><p style="margin-top:20px;font-size:12.5px">${email ? `✉ ${safeText(email)}` : ""} ${link ? `<br>🌐 <a href="${safeText(link)}" target="_blank" style="color:#34d399">${safeText(link)}</a>` : ""}</p>`;
+  }
+
+  function downloadPortfolio() {
+    const name = $("#portName").value || "Portfolio";
+    const html = `<!doctype html><html lang="bn"><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>${safeText(name)} — Creator Portfolio</title><style>body{font:16px 'Hind Siliguri',Arial,sans-serif;background:#060913;color:#f0f4ff;margin:0;padding:8vw;line-height:1.8}main{max-width:760px;margin:auto;padding:40px;border:1px solid rgba(255,255,255,0.12);border-radius:24px;background:#0d152b}small{letter-spacing:2px;color:#c4b5fd;font-weight:800;font-size:11px}h1{font-size:40px;margin:12px 0 0}.role{color:#10b981;font-weight:600}p{color:#94a3b8}.chips span{display:inline-block;border:1px solid rgba(255,255,255,0.15);border-radius:30px;padding:6px 14px;margin:4px;font-size:12px;background:rgba(255,255,255,0.05);color:#f1f5f9}a{color:#34d399}</style><main><small>SHM CREATOR PORTFOLIO</small><h1>${safeText($("#portName").value)}</h1><div class="role">${safeText($("#portRole").value)}</div><p>${safeText($("#portBio").value).replace(/\n/g,"<br>")}</p><div class="chips">${$("#portSkills").value.split(",").map(s=>s.trim()).filter(Boolean).map(s=>`<span>${safeText(s)}</span>`).join("")}</div><p style="margin-top:24px">${safeText($("#portEmail").value)}<br><a href="${safeText($("#portLink").value)}">${safeText($("#portLink").value)}</a></p></main></html>`;
+    downloadBlob(new Blob([html], {type:"text/html;charset=utf-8"}), "creator-portfolio.html");
+    showToast("পোর্টফোলিও HTML ফাইল ডাউনলোড হয়েছে।");
+  }
+
+  // 5. Business Quotation Kit
+  function renderBusiness() {
+    modalContent.innerHTML = `<div class="workspace-grid"><div class="form-stack">
+      <div class="field"><label for="bizDocType">ডকুমেন্টের ধরন</label><select id="bizDocType"><option>Quotation / কোটেশন</option><option>Service Price List / মূল্যতালিকা</option><option>Invoice / বিল</option></select></div>
+      ${field("ব্যবসা বা সংস্থার নাম", "bizName", "SHM Digital Hub Services")}
+      ${field("গ্রাহকের নাম (ঐচ্ছিক)", "bizCustomer", "", "text", "গ্রাহকের নাম")}
+      ${area("পরিষেবা ও মূল্য (প্রতি লাইনে একটি)", "bizItems", "Social Media Poster Design — ₹299\\nCustom Web Page Setup — ₹999\\nDigital Document Formatting — ₹499")}
+      ${area("শর্তাবলী ও পেমেন্ট বিবরণ", "bizTerms", "কাজের আগে ৫০% অগ্রিম এবং কাজ সম্পন্ন হওয়ার পর বাকি পেমেন্ট প্রযোজ্য।")}
+      ${buttons([{id:"updateBusiness", label:"ডকুমেন্ট আপডেট", primary:true}, {id:"printBusiness", label:"PDF / Print"}])}
+      <p class="small-note">সাধারণ কমার্শিয়াল কোটেশন ও প্রাইস লিস্ট তৈরির টুল।</p>
+    </div><div><div class="preview-title">DOCUMENT PREVIEW</div><div id="businessPaper" class="business-paper printable"></div></div></div>`;
+    
+    ["bizDocType", "bizName", "bizCustomer", "bizItems", "bizTerms"].forEach(id => $("#" + id).addEventListener("input", updateBusiness));
+    $("#updateBusiness").addEventListener("click", updateBusiness);
+    $("#printBusiness").addEventListener("click", () => { updateBusiness(); printElement($("#businessPaper"), "Business Quotation"); });
+    updateBusiness();
+  }
+
+  function updateBusiness() {
+    const paper = $("#businessPaper"); if (!paper) return;
+    const items = $("#bizItems").value.split("\n").map(s => s.trim()).filter(Boolean);
+    const rows = items.map((item, i) => {
+      const parts = item.split("—");
+      return `<tr><td>${i+1}</td><td>${safeText(parts[0].trim())}</td><td>${safeText((parts[1]||"মূল্য নির্ধারিত").trim())}</td></tr>`;
+    }).join("");
+    
+    paper.innerHTML = `<div style="font-size:10px;letter-spacing:2px;color:#8b5cf6;font-weight:800">SHM BUSINESS SOLUTIONS</div><h3>${safeText($("#bizDocType").value)}</h3><h4 style="margin:8px 0 4px;font-size:16px;color:#0f172a">${safeText($("#bizName").value)}</h4><p>${$("#bizCustomer").value ? `গ্রাহক: ${safeText($("#bizCustomer").value)}` : ""}</p><table><thead><tr><th>#</th><th>বিবরণ / পরিষেবা</th><th>মূল্য</th></tr></thead><tbody>${rows}</tbody></table><p style="white-space:pre-wrap;font-size:12px;color:#475569;margin-top:16px">${safeText($("#bizTerms").value)}</p><p style="font-size:9.5px;color:#94a3b8;margin-top:24px">Generated via SHM Creator Studio.</p>`;
+  }
+
+  // 6. Creator SEO & Meta Inspector
+  function renderSEO() {
+    modalContent.innerHTML = `<div class="workspace-grid"><div class="form-stack">
+      ${field("পেজ বা পোস্টের টাইটেল", "seoTitle", "SHM Creator Studio — বাংলা ক্রিয়েটর টুলস", "text", "সর্বোচ্চ ৬০ ক্যারেক্টার")}
+      ${area("মেটা ডেসক্রিপশন", "seoDesc", "বাংলা ও ভারতীয় ক্রিয়েটর, ছোট ব্যবসা ও ডিজিটাল উদ্যোক্তাদের জন্য সহজ Creative Tools.", "সর্বোচ্চ ১৬০ ক্যারেক্টার")}
+      ${field("কিওয়ার্ডস (কমা দিয়ে লিখুন)", "seoKeys", "creator studio, bangla tools, shm digital hub, poster maker")}
+      ${buttons([{id:"analyzeSEO", label:"এসইও চেক করুন", primary:true}, {id:"copySEO", label:"টেমপ্লেট কপি করুন"}])}
+      <p class="small-note">আপনার ওয়েবসাইট বা ব্লগ পোস্টের এসইও অপ্টিমাইজেশন যাচাই করুন।</p>
+    </div><div><div class="preview-title">SEO ANALYSIS & PREVIEW</div><div class="output-area" id="seoOutput">টাইটেল ও ডেসক্রিপশন দিয়ে “এসইও চেক করুন” বাটনে ক্লিক করুন।</div></div></div>`;
+    
+    $("#analyzeSEO").addEventListener("click", analyzeSEO);
+    $("#copySEO").addEventListener("click", () => copyText($("#seoOutput").textContent));
+    analyzeSEO();
+  }
+
+  function analyzeSEO() {
+    const title = $("#seoTitle").value.trim();
+    const desc = $("#seoDesc").value.trim();
+    const keys = $("#seoKeys").value.trim();
+    
+    const tLen = title.length;
+    const dLen = desc.length;
+    
+    let tFeedback = tLen >= 30 && tLen <= 60 ? "✅ টাইটেল লেন্থ নিখুঁত (৩০-৬০ অক্ষর)।" : "⚠️ টাইটেল ৩০ থেকে ৬০ অক্ষরের মধ্যে রাখা আদর্শ।";
+    let dFeedback = dLen >= 70 && dLen <= 160 ? "✅ মেটা ডেসক্রিপশন লেন্থ নিখুঁত (৭০-১৬০ অক্ষর)।" : "⚠️ ডেসক্রিপশন ৭০ থেকে ১৬০ অক্ষরের মধ্যে রাখুন।";
+    
+    let htmlCode = `<!-- HTML Meta Tags Generated via SHM Creator Studio -->\n<title>${safeText(title)}</title>\n<meta name="description" content="${safeText(desc)}">\n<meta name="keywords" content="${safeText(keys)}">\n\n[বিশ্লেষণ ফলাফল]:\n- টাইটেল অক্ষর সংখ্যা: ${tLen} -> ${tFeedback}\n- ডেসক্রিপশন অক্ষর সংখ্যা: ${dLen} -> ${dFeedback}`;
+    $("#seoOutput").textContent = htmlCode;
+  }
+
+  async function copyText(text) {
+    try { 
+      await navigator.clipboard.writeText(text); 
+      showToast("সফলভাবে ক্লিপবোর্ডে কপি হয়েছে।"); 
+    } catch { 
+      const ta = document.createElement("textarea"); 
+      ta.value = text; 
+      document.body.appendChild(ta); 
+      ta.select(); 
+      document.execCommand("copy"); 
+      ta.remove(); 
+      showToast("কপি করা হয়েছে।"); 
+    }
+  }
+
+  function downloadBlob(blob, filename) {
+    const url = URL.createObjectURL(blob), a = document.createElement("a");
+    a.href = url; a.download = filename; 
+    document.body.appendChild(a); a.click(); 
+    a.remove(); 
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+
+  function printElement(element, title) {
+    const win = window.open("", "_blank", "width=900,height=700");
+    if (!win) { showToast("পপ-আপ ব্লক করা আছে। ব্রাউজার সেটিংস চেক করুন।"); return; }
+    const styles = `<style>body{font-family:'Hind Siliguri',Arial,sans-serif;color:#0f172a;padding:30px;line-height:1.7}h3{font-size:24px}table{width:100%;border-collapse:collapse}td,th{border-bottom:1px solid #cbd5e1;padding:10px;text-align:left}@page{margin:15mm}</style>`;
+    win.document.write(`<!doctype html><html lang="bn"><head><meta charset="utf-8"><title>${safeText(title)}</title>${styles}</head><body>${element.outerHTML}</body></html>`);
+    win.document.close(); win.focus(); 
+    setTimeout(() => { win.print(); }, 350);
+  }
 })();
