@@ -1,0 +1,46 @@
+
+name: Build SHM Defender Health EXE
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install PyInstaller
+        run: python -m pip install pyinstaller
+
+      - name: Build Windows EXE
+        run: >
+          python -m PyInstaller
+          --noconfirm
+          --clean
+          --onefile
+          --windowed
+          --uac-admin
+          --name SHM_Defender_Health
+          SHM_Defender_Security_Center.py
+
+      - name: Upload EXE
+        uses: actions/upload-artifact@v4
+        with:
+          name: SHM-Defender-Health-Windows
+          path: dist/SHM_Defender_Health.exe
+          if-no-files-found: error
+          retention-days: 30
